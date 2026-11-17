@@ -37,12 +37,24 @@ Argon2's address blocks do), and a test of `Key` and `IDKey` against
 
 ## Performance
 
-Apple M4 Max, one core, Argon2id t=3, m=64 MiB, p=1:
+Argon2id, t=3, m=64 MiB, one lane, 32-byte output, one core, Go 1.27.4. The
+reference is libsodium 1.0.22 `crypto_pwhash` (Argon2id v1.3), compared by
+[refbench](https://github.com/go-scikit/refbench) with the harness of
+go-theca/theca (`bench/`, theca v0.7.0, argon2 v0.1.0): interleaved rounds,
+every round under a 1-minute load of 8, output compared byte for byte.
 
-| | ms |
-|---|---:|
-| this package | 41.6 |
-| `golang.org/x/crypto/argon2` | 93.6 |
+| machine | this package | libsodium 1.0.22 | ratio | `x/crypto/argon2` |
+|---|---:|---:|---:|---:|
+| Apple M4 Max | 48.9 ms | 66.5 ms | 0.73 | 93.6 ms |
+| AMD Ryzen 9 7950X (Zen 4), pinned to one core | 66.4 ms | 262 ms | 0.25 | 66.4 ms (same code) |
+
+On arm64 the NEON kernel is 1.9 times faster than x/crypto and 1.36 times
+faster than libsodium. On amd64 this
+package is x/crypto's SSE4.1 code unchanged. libsodium's 262 ms on Zen 4 is
+libsodium's own: a C program calling `crypto_pwhash` on the same core takes
+265 ms with two different builds of 1.0.22, both reporting AVX2 and AVX-512F.
+The `x/crypto` column on the M4 is `go test -bench T3M64 -cpu 1` in this
+repository (`BenchmarkXCryptoIDKeyT3M64`).
 
 ## Licence
 
