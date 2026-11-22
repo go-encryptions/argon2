@@ -12,7 +12,10 @@ key := argon2.IDKey(password, salt, 3, 64*1024, 4, 32)
 ```
 
 `Key` and `IDKey` are the same functions with the same results as in
-`golang.org/x/crypto/argon2`; only the speed differs.
+`golang.org/x/crypto/argon2`; only the speed differs. One difference in
+failure: `keyLen == 0` panics with `argon2: key length too small`, where
+`x/crypto/argon2` (v0.59.0) crashes with a nil-pointer dereference. As in
+`x/crypto`, `time == 0` and `threads == 0` also panic.
 
 ## Kernels
 
