@@ -55,7 +55,8 @@ const (
 
 // Key derives a key from the password, salt, and cost parameters using Argon2i
 // returning a byte slice of length keyLen that can be used as cryptographic
-// key. The CPU cost and parallelism degree must be greater than zero.
+// key. The CPU cost, the parallelism degree and keyLen must be greater than
+// zero; otherwise Key panics.
 //
 // For example, you can get a derived key for e.g. AES-256 (which needs a
 // 32-byte key) by doing:
@@ -78,8 +79,8 @@ func Key(password, salt []byte, time, memory uint32, threads uint8, keyLen uint3
 
 // IDKey derives a key from the password, salt, and cost parameters using
 // Argon2id returning a byte slice of length keyLen that can be used as
-// cryptographic key. The CPU cost and parallelism degree must be greater than
-// zero.
+// cryptographic key. The CPU cost, the parallelism degree and keyLen must be
+// greater than zero; otherwise IDKey panics.
 //
 // For example, you can get a derived key for e.g. AES-256 (which needs a
 // 32-byte key) by doing:
@@ -108,6 +109,11 @@ func deriveKey(mode int, password, salt, secret, data []byte, time, memory uint3
 	}
 	if threads < 1 {
 		panic("argon2: parallelism degree too low")
+	}
+	// golang.org/x/crypto/argon2 (v0.59.0) has no such check and crashes with a
+	// nil-pointer dereference in blake2bHash; refuse with a clear message.
+	if keyLen < 1 {
+		panic("argon2: key length too small")
 	}
 	h0 := initHash(password, salt, secret, data, time, memory, uint32(threads), keyLen, mode)
 
